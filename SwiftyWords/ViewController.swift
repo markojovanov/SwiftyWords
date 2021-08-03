@@ -142,41 +142,42 @@ class ViewController: UIViewController {
     }
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadLevel()
+        performSelector(inBackground: #selector(loadLevel), with: nil)
     }
-    func loadLevel() {
+    @objc func loadLevel() {
         var clueString = ""
         var solutionString = ""
         var letterBits = [String]()
-        
-        if let levelFileURL = Bundle.main.url(forResource: "level\(level)",
-                                              withExtension: "txt") {
-            if let levelContents = try? String(contentsOf: levelFileURL) {
-                var lines = levelContents.components(separatedBy: "\n")
-                lines.shuffle()
-                for (index,line) in lines.enumerated() {
-                    let parts = line.components(separatedBy: ": ")
-                    let answer = parts[0]
-                    let clue = parts[1]
-                    clueString += "\(index+1). \(clue)\n"
-                    let solutionWord = answer.replacingOccurrences(of: "|",
-                                                                   with: "")
-                    solutionString += "\(solutionWord.count) letters\n"
-                    solutions.append(solutionWord)
-                    let bits = answer.components(separatedBy: "|")
-                    letterBits += bits
+            if let levelFileURL = Bundle.main.url(forResource: "level\(level)",
+                                                  withExtension: "txt") {
+                if let levelContents = try? String(contentsOf: levelFileURL) {
+                    var lines = levelContents.components(separatedBy: "\n")
+                    lines.shuffle()
+                    for (index,line) in lines.enumerated() {
+                        let parts = line.components(separatedBy: ": ")
+                        let answer = parts[0]
+                        let clue = parts[1]
+                        clueString += "\(index+1). \(clue)\n"
+                        let solutionWord = answer.replacingOccurrences(of: "|",
+                                                                        with: "")
+                        solutionString += "\(solutionWord.count) letters\n"
+                        solutions.append(solutionWord)
+                        let bits = answer.components(separatedBy: "|")
+                        letterBits += bits
+                    }
+                }
+            }
+        DispatchQueue.main.async {
+            [weak self] in
+            self?.cluesLabel.text = clueString.trimmingCharacters(in: .whitespacesAndNewlines)
+            self?.answersLabel.text = solutionString.trimmingCharacters(in: .whitespacesAndNewlines)
+            letterBits.shuffle()
+            if letterBits.count == self?.letterButtons.count {
+                for i in 0..<self!.letterButtons.count {
+                    self?.letterButtons[i].setTitle(letterBits[i], for: .normal)
                 }
             }
         }
-        cluesLabel.text = clueString.trimmingCharacters(in: .whitespacesAndNewlines)
-        answersLabel.text = solutionString.trimmingCharacters(in: .whitespacesAndNewlines)
-        letterBits.shuffle()
-        if letterBits.count == letterButtons.count {
-            for i in 0..<letterButtons.count {
-                letterButtons[i].setTitle(letterBits[i], for: .normal)
-            }
-        }
-        
     }
     @objc func submitTapped(_ sender: UIButton) {
         guard let answerText = currentAnswer.text else { return }
@@ -212,7 +213,7 @@ class ViewController: UIViewController {
     func levelUp(action: UIAlertAction) {
         level += 1
         solutions.removeAll(keepingCapacity: true)
-        loadLevel()
+        performSelector(inBackground: #selector(loadLevel), with: nil)
         for button in letterButtons {
             button.isHidden = false
         }
